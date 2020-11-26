@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" /> <!-- Optimal Internet Explorer compatibility -->
+  <title>Teste Integração API PayPal</title>
+  <link rel="stylesheet" href="./styel.css">
+</head>
+
+<body>
+  <script
+    src="https://www.paypal.com/sdk/js?client-id=sb&currency=BRL&components=buttons,marks&intent=authorize&buyer-country=BR">
+    // Required. Replace SB_CLIENT_ID with your sandbox client ID.
+    </script>
+
+  <!--
+
+  <label>
+  <input type="radio" name="payment-option" value="paypal" checked>
+  <img src="paypal-mark.jpg" alt="Pay with PayPal">
+</label>
+
+<label>
+  <input type="radio" name="payment-option" value="alternate">
+  <div id="paypal-marks-container"></div>
+</label>
+
+<div id="paypal-buttons-container"></div>
+<div id="alternate-button-container">
+  <button>Pay with a different method</button>
+</div>
+
+<script>
+  // Render the PayPal marks
+  paypal.Marks().render('#paypal-marks-container');
+
+  // Render the PayPal buttons
+  paypal.Buttons().render('#paypal-buttons-container');
+
+  // Listen for changes to the radio buttons
+  document.querySelectorAll('input[name=payment-option]')
+    .forEach(function (el) {
+      el.addEventListener('change', function (event) {
+
+        // If PayPal is selected, show the PayPal button
+        if (event.target.value === 'paypal') {
+          document.body.querySelector('#alternate-button-container')
+            .style.display = 'none';
+          document.body.querySelector('#paypal-button-container')
+            .style.display = 'block';
+        }
+
+        // If alternate funding is selected, show a different button
+        if (event.target.value === 'alternate') {
+          document.body.querySelector('#alternate-button-container')
+            .style.display = 'block';
+          document.body.querySelector('#paypal-button-container')
+            .style.display = 'none';
+        }
+      });
+    });
+
+  // Hide non-PayPal button by default
+  document.body.querySelector('#alternate-button-container')
+    .style.display = 'none';
+</script>
+
+-->
+
+  <div id="paypal-button-container" class="teste"></div>
+  <script>
+    paypal.Buttons({
+      enableStandardCardFields: true,
+      createOrder: function (data, actions) {
+        // This function sets up the details of the transaction, including the amount and line item details.
+        return actions.order.create({
+          //intent: 'CAPTURE',
+          payer: {
+            name: {
+              given_name: "PayPal",
+              surname: "Customer"
+            },
+            address: {
+              address_line_1: '123 ABC Street',
+              address_line_2: 'Apt 2',
+              admin_area_2: 'San Jose',
+              admin_area_1: 'CA',
+              postal_code: '95121',
+              country_code: 'US'
+            },
+            email_address: "customer@domain.com",
+            phone: {
+              phone_type: "MOBILE",
+              phone_number: {
+                national_number: "14082508100"
+              }
+            }
+          },
+          purchase_units: [{
+            amount: {
+              currency_code: "BRL",
+              value: '10.22'
+            },
+            shipping: {
+              address: {
+                address_line_1: '2211 N First Street',
+                address_line_2: 'Building 17',
+                admin_area_2: 'San Jose',
+                admin_area_1: 'CA',
+                postal_code: '95131',
+                country_code: 'US'
+              }
+            },
+          }]
+        });
+      },
+      onApprove: function (data, actions) {
+        // This function captures the funds from the transaction.
+        // return actions.order.capture().then(function(details) {
+        //   // This function shows a transaction success message to your buyer.
+        //   alert('Transação finalizada por ' + details.payer.name.given_name);
+        // });
+        // Authorize the transaction
+        actions.order.authorize().then(function (authorization) {
+
+          // Get the authorization id
+          var authorizationID = authorization.purchase_units[0]
+            .payments.authorizations[0].id
+
+          // Call your server to validate and capture the transaction
+          return fetch('http://localhost:3000/create-authorization', {
+            method: 'post',
+            headers: {
+              'content-type': 'application/json'
+            },
+            body: JSON.stringify({
+              orderID: data.orderID,
+              authorizationID: authorizationID
+            })
+          });
+        });
+      },
+      style: {
+        layout: 'vertical',
+        color: 'gold',
+        shape: 'pill',
+        label: 'installment',
+        period: 3,
+        height: 25
+      }
+    }).render('#paypal-button-container');
+    // This function displays Smart Payment Buttons on your web page.
+  </script>
+</body>
+
+</html>
